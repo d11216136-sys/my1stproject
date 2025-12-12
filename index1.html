@@ -320,8 +320,8 @@
             // Dealer cards
             if (state.phase === 'player-turn') {
                 elements.dealerCards.textContent = formatCards(state.dealerCards, true);
-                elements.dealerValue.textContent = state.dealerCards.length > 0 
-                    ? `點數: ${calculateHandValue([state.dealerCards[0]])}` 
+                elements.dealerValue.textContent = state.dealerCards.length > 1 
+                    ? `點數: ${calculateHandValue([state.dealerCards[1]])}` 
                     : '點數: ?';
             } else {
                 elements.dealerCards.textContent = formatCards(state.dealerCards);
