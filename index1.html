@@ -262,7 +262,7 @@
 
         // Draw a card from the deck
         function drawCard() {
-            if (state.deck.length === 0) {
+            if (state.deck.length < 10) {
                 state.deck = buildDeck();
                 shuffle(state.deck);
                 updateMessage('牌堆已重新洗牌 (Deck reshuffled)');
@@ -320,8 +320,9 @@
             // Dealer cards
             if (state.phase === 'player-turn') {
                 elements.dealerCards.textContent = formatCards(state.dealerCards, true);
-                const visibleCard = state.dealerCards.length > 0 ? [state.dealerCards[0]] : [];
-                elements.dealerValue.textContent = `點數: ${visibleCard.length > 0 ? calculateHandValue(visibleCard) : '?'}`;
+                elements.dealerValue.textContent = state.dealerCards.length > 0 
+                    ? `點數: ${calculateHandValue([state.dealerCards[0]])}` 
+                    : '點數: ?';
             } else {
                 elements.dealerCards.textContent = formatCards(state.dealerCards);
                 elements.dealerValue.textContent = `點數: ${calculateHandValue(state.dealerCards)}`;
@@ -413,10 +414,7 @@
             let message = '';
             let type = '';
 
-            if (playerValue > 21) {
-                message = 'Player bust! 玩家爆牌，莊家獲勝！';
-                type = 'lose';
-            } else if (dealerValue > 21) {
+            if (dealerValue > 21) {
                 message = 'Dealer bust! 莊家爆牌，玩家獲勝！';
                 type = 'win';
             } else if (playerValue > dealerValue) {
