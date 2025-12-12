@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21點 (Blackjack) - 單檔示範</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2a5298;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .rules {
+            background: #f8f9fa;
+            border-left: 4px solid #2a5298;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+        }
+
+        .rules h2 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #2a5298;
+        }
+
+        .rules ul {
+            list-style-position: inside;
+            line-height: 1.8;
+        }
+
+        .game-area {
+            margin: 25px 0;
+        }
+
+        .player-section,
+        .dealer-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border: 2px solid #dee2e6;
+        }
+
+        .dealer-section {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .player-section {
+            background: #d1ecf1;
+            border-color: #0dcaf0;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .cards {
+            font-size: 1.5em;
+            margin: 10px 0;
+            min-height: 40px;
+            color: #212529;
+        }
+
+        .value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            margin: 5px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background: #1e3c72;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        button.primary {
+            background: #28a745;
+        }
+
+        button.primary:hover:not(:disabled) {
+            background: #218838;
+        }
+
+        button.danger {
+            background: #dc3545;
+        }
+
+        button.danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+
+        .message {
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            min-height: 50px;
+            background: #e7f3ff;
+            color: #004085;
+            border: 2px solid #b8daff;
+        }
+
+        .message.win {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .message.lose {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .message.push {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>21點 (Blackjack) - 單檔示範</h1>
+
+        <div class="rules">
+            <h2>遊戲規則</h2>
+            <ul>
+                <li><strong>目標：</strong>點數接近 21 但不超過</li>
+                <li><strong>牌面點數：</strong>2-10 依牌面、J/Q/K = 10、A = 1 或 11</li>
+                <li><strong>爆牌：</strong>超過 21 點立即輸掉</li>
+                <li><strong>勝負：</strong>點數高者勝、同點平手（Push）</li>
+                <li><strong>莊家規則：</strong>點數 &lt; 17 必須補牌、≥ 17 停牌</li>
+            </ul>
+        </div>
+
+        <div class="message" id="message">按下 New Round 開始新局</div>
+
+        <div class="game-area">
+            <div class="dealer-section">
+                <div class="section-title">🎰 莊家 (Dealer)</div>
+                <div class="cards" id="dealer-cards">-</div>
+                <div class="value" id="dealer-value">點數: ?</div>
+            </div>
+
+            <div class="player-section">
+                <div class="section-title">🎮 玩家 (Player)</div>
+                <div class="cards" id="player-cards">-</div>
+                <div class="value" id="player-value">點數: 0</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="new-round-btn" class="primary">New Round</button>
+            <button id="hit-btn" disabled>Hit</button>
+            <button id="stand-btn" disabled>Stand</button>
+            <button id="reset-btn" class="danger">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const state = {
+            deck: [],
+            playerCards: [],
+            dealerCards: [],
+            dealerHiddenCard: null,
+            phase: 'idle', // 'idle', 'player-turn', 'dealer-turn', 'finished'
+            message: ''
+        };
+
+        // Card suits and ranks
+        const suits = ['♠', '♥', '♦', '♣'];
+        const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+        // DOM elements
+        const elements = {
+            message: document.getElementById('message'),
+            dealerCards: document.getElementById('dealer-cards'),
+            dealerValue: document.getElementById('dealer-value'),
+            playerCards: document.getElementById('player-cards'),
+            playerValue: document.getElementById('player-value'),
+            newRoundBtn: document.getElementById('new-round-btn'),
+            hitBtn: document.getElementById('hit-btn'),
+            standBtn: document.getElementById('stand-btn'),
+            resetBtn: document.getElementById('reset-btn')
+        };
+
+        // Build a standard 52-card deck
+        function buildDeck() {
+            const deck = [];
+            for (const suit of suits) {
+                for (const rank of ranks) {
+                    deck.push({ rank, suit });
+                }
+            }
+            return deck;
+        }
+
+        // Fisher-Yates shuffle
+        function shuffle(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        // Draw a card from the deck
+        function drawCard() {
+            if (state.deck.length === 0) {
+                state.deck = buildDeck();
+                shuffle(state.deck);
+                updateMessage('牌堆已重新洗牌 (Deck reshuffled)');
+            }
+            return state.deck.pop();
+        }
+
+        // Calculate hand value (A can be 1 or 11)
+        function calculateHandValue(cards) {
+            let total = 0;
+            let aces = 0;
+
+            for (const card of cards) {
+                if (card.rank === 'A') {
+                    aces++;
+                    total += 1;
+                } else if (['J', 'Q', 'K'].includes(card.rank)) {
+                    total += 10;
+                } else {
+                    total += parseInt(card.rank);
+                }
+            }
+
+            // Try to use one Ace as 11 if it doesn't bust
+            while (aces > 0 && total + 10 <= 21) {
+                total += 10;
+                aces--;
+            }
+
+            return total;
+        }
+
+        // Format cards for display
+        function formatCards(cards, hideFirst = false) {
+            if (cards.length === 0) return '-';
+            return cards.map((card, index) => {
+                if (index === 0 && hideFirst) {
+                    return '??';
+                }
+                return `${card.rank}${card.suit}`;
+            }).join(', ');
+        }
+
+        // Update message
+        function updateMessage(msg, type = '') {
+            elements.message.textContent = msg;
+            elements.message.className = 'message';
+            if (type) {
+                elements.message.classList.add(type);
+            }
+        }
+
+        // Render the game state
+        function render() {
+            // Dealer cards
+            if (state.phase === 'player-turn') {
+                elements.dealerCards.textContent = formatCards(state.dealerCards, true);
+                const visibleCard = state.dealerCards.length > 0 ? [state.dealerCards[0]] : [];
+                elements.dealerValue.textContent = `點數: ${visibleCard.length > 0 ? calculateHandValue(visibleCard) : '?'}`;
+            } else {
+                elements.dealerCards.textContent = formatCards(state.dealerCards);
+                elements.dealerValue.textContent = `點數: ${calculateHandValue(state.dealerCards)}`;
+            }
+
+            // Player cards
+            elements.playerCards.textContent = formatCards(state.playerCards);
+            elements.playerValue.textContent = `點數: ${calculateHandValue(state.playerCards)}`;
+
+            // Button states
+            elements.newRoundBtn.disabled = state.phase === 'player-turn';
+            elements.hitBtn.disabled = state.phase !== 'player-turn';
+            elements.standBtn.disabled = state.phase !== 'player-turn';
+        }
+
+        // Start a new round
+        function startNewRound() {
+            // Initialize or reshuffle deck if needed
+            if (state.deck.length < 10) {
+                state.deck = buildDeck();
+                shuffle(state.deck);
+            }
+
+            // Reset state
+            state.playerCards = [];
+            state.dealerCards = [];
+            state.phase = 'player-turn';
+
+            // Deal initial cards
+            state.playerCards.push(drawCard());
+            state.dealerCards.push(drawCard());
+            state.playerCards.push(drawCard());
+            state.dealerCards.push(drawCard());
+
+            updateMessage('Your turn - Hit 或 Stand?');
+            render();
+        }
+
+        // Player hits
+        function playerHit() {
+            if (state.phase !== 'player-turn') return;
+
+            state.playerCards.push(drawCard());
+            const playerValue = calculateHandValue(state.playerCards);
+
+            if (playerValue > 21) {
+                state.phase = 'finished';
+                updateMessage('Player bust! 玩家爆牌，莊家獲勝！', 'lose');
+                // Reveal dealer's hidden card
+                render();
+            } else {
+                updateMessage(`Your turn - 目前 ${playerValue} 點`);
+                render();
+            }
+        }
+
+        // Player stands
+        function playerStand() {
+            if (state.phase !== 'player-turn') return;
+
+            state.phase = 'dealer-turn';
+            updateMessage('Dealer playing...');
+            render();
+
+            // Dealer plays after a short delay for better UX
+            setTimeout(dealerPlay, 500);
+        }
+
+        // Dealer plays automatically
+        function dealerPlay() {
+            let dealerValue = calculateHandValue(state.dealerCards);
+
+            // Dealer must hit if < 17
+            while (dealerValue < 17) {
+                state.dealerCards.push(drawCard());
+                dealerValue = calculateHandValue(state.dealerCards);
+            }
+
+            state.phase = 'finished';
+            render();
+            settleResult();
+        }
+
+        // Settle the result
+        function settleResult() {
+            const playerValue = calculateHandValue(state.playerCards);
+            const dealerValue = calculateHandValue(state.dealerCards);
+
+            let message = '';
+            let type = '';
+
+            if (playerValue > 21) {
+                message = 'Player bust! 玩家爆牌，莊家獲勝！';
+                type = 'lose';
+            } else if (dealerValue > 21) {
+                message = 'Dealer bust! 莊家爆牌，玩家獲勝！';
+                type = 'win';
+            } else if (playerValue > dealerValue) {
+                message = `玩家獲勝！ Player: ${playerValue} > Dealer: ${dealerValue}`;
+                type = 'win';
+            } else if (playerValue < dealerValue) {
+                message = `莊家獲勝！ Dealer: ${dealerValue} > Player: ${playerValue}`;
+                type = 'lose';
+            } else {
+                message = `平手 Push! 雙方都是 ${playerValue} 點`;
+                type = 'push';
+            }
+
+            updateMessage(message, type);
+        }
+
+        // Reset the game
+        function resetGame() {
+            state.deck = [];
+            state.playerCards = [];
+            state.dealerCards = [];
+            state.phase = 'idle';
+            
+            updateMessage('按下 New Round 開始新局');
+            
+            elements.dealerCards.textContent = '-';
+            elements.dealerValue.textContent = '點數: ?';
+            elements.playerCards.textContent = '-';
+            elements.playerValue.textContent = '點數: 0';
+            
+            elements.newRoundBtn.disabled = false;
+            elements.hitBtn.disabled = true;
+            elements.standBtn.disabled = true;
+        }
+
+        // Event listeners
+        elements.newRoundBtn.addEventListener('click', startNewRound);
+        elements.hitBtn.addEventListener('click', playerHit);
+        elements.standBtn.addEventListener('click', playerStand);
+        elements.resetBtn.addEventListener('click', resetGame);
+
+        // Initialize
+        resetGame();
+    </script>
+</body>
+</html>
